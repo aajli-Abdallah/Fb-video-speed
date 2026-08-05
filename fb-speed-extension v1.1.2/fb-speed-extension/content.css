@@ -1,0 +1,45 @@
+.fb-speed-overlay {
+  position: fixed;
+  z-index: 2147483000;
+  pointer-events: none; /* let clicks reach the video/controls underneath */
+}
+
+.fb-speed-panel {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2147483000;
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px;
+  border-radius: 8px;
+  font-family: Helvetica, Arial, sans-serif;
+  pointer-events: auto; /* buttons themselves are clickable */
+}
+
+.fb-speed-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.fb-speed-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.fb-speed-btn:active {
+  transform: scale(0.95);
+}
+
+.fb-speed-btn.fb-speed-active {
+  background: #1877f2;
+  color: #fff;
+  font-weight: 700;
+}

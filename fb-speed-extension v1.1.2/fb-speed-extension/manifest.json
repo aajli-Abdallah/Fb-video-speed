@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook Video Speed Controller",
+  "version": "1.0.0",
+  "description": "Speed up Facebook videos to 1.2x, 1.5x, 1.7x, or 2x with one click.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "*://*.facebook.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://*.facebook.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Facebook Video Speed"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
