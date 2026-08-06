@@ -4,7 +4,7 @@ A Chrome extension that adds one-click speed buttons (1x, 1.2x, 1.5x, 1.7x, 2x) 
 
 ## Install (unpacked, for personal use / testing)
 
-1. Unzip this folder somewhere permanent (don't delete it after installing — Chrome loads the extension directly from these files).
+1. Unzip this folder (if it is ziped) somewhere permanent (don't delete it after installing — Chrome loads the extension directly from these files).
 2. Open Chrome and go to `chrome://extensions`.
 3. Turn on **Developer mode** (toggle, top right).
 4. Click **Load unpacked**.
