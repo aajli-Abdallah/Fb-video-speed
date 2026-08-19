@@ -8,7 +8,7 @@ A Chrome extension that adds one-click speed buttons (1x, 1.2x, 1.5x, 1.7x, 2x) 
 2. Open Chrome and go to `chrome://extensions`.
 3. Turn on **Developer mode** (toggle, top right).
 4. Click **Load unpacked**.
-5. Select the `fb-speed-extension` folder.
+5. Select this repository folder.
 6. Go to facebook.com — a small speed panel will appear in the top-left corner of any video (feed, watch, reels).
 
 ## How it works
