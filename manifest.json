@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Facebook Video Speed Controller",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "description": "Speed up Facebook videos to 1.2x, 1.5x, 1.7x, or 2x with one click.",
   "permissions": ["storage"],
   "host_permissions": [
