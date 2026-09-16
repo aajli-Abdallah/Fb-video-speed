@@ -1,61 +1,329 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Facebook Video Speed</title>
+  <title>Facebook Video Speed v2.0</title>
   <style>
+    :root {
+      --fb-blue: #1877f2;
+      --fb-blue-hover: #166fe5;
+      --bg-color: #ffffff;
+      --card-bg: #f7f8fa;
+      --border-color: #e4e6eb;
+      --text-main: #050505;
+      --text-muted: #65676b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      width: 220px;
-      font-family: Helvetica, Arial, sans-serif;
-      padding: 12px;
+      width: 270px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 14px;
       margin: 0;
-      background: #fff;
-      color: #050505;
+      background: var(--bg-color);
+      color: var(--text-main);
+      user-select: none;
     }
-    h1 {
-      font-size: 14px;
-      margin: 0 0 10px;
-      color: #1877f2;
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
     }
-    p {
-      font-size: 12px;
-      color: #65676b;
-      margin: 0 0 10px;
-    }
-    .speeds {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+
+    .title-group {
+      display: flex;
+      align-items: center;
       gap: 6px;
     }
-    button {
-      background: #f0f2f5;
-      border: none;
+
+    .title-group h1 {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-main);
+    }
+
+    .version-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--fb-blue);
+      background: rgba(24, 119, 242, 0.1);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    /* Switch toggle */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 22px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .25s;
+      border-radius: 22px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--fb-blue);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+
+    /* Speed Display Card */
+    .speed-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .speed-value-wrap {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 2px;
+      margin-bottom: 6px;
+    }
+
+    .speed-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--fb-blue);
+      line-height: 1;
+    }
+
+    .speed-slider {
+      width: 100%;
+      margin: 8px 0 2px;
+      accent-color: var(--fb-blue);
+      cursor: pointer;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Preset Grid */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+
+    .preset-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
       border-radius: 6px;
-      padding: 8px 0;
-      font-size: 13px;
+      padding: 6px 0;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      color: #050505;
+      color: var(--text-main);
+      transition: all 0.15s ease;
     }
-    button:hover {
+
+    .preset-btn:hover {
       background: #e4e6eb;
     }
-    button.active {
-      background: #1877f2;
+
+    .preset-btn.active {
+      background: var(--fb-blue);
+      border-color: var(--fb-blue);
       color: #fff;
     }
+
+    /* Settings section */
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 10px;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .setting-select {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .setting-select:focus {
+      border-color: var(--fb-blue);
+    }
+
+    /* Mini switch for settings */
+    .mini-switch {
+      position: relative;
+      display: inline-block;
+      width: 32px;
+      height: 18px;
+    }
+
+    .mini-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .mini-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .25s;
+      border-radius: 18px;
+    }
+
+    .mini-slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+    }
+
+    input:checked + .mini-slider {
+      background-color: var(--fb-blue);
+    }
+
+    input:checked + .mini-slider:before {
+      transform: translateX(14px);
+    }
+
     .hint {
       margin-top: 10px;
-      font-size: 11px;
-      color: #8a8d91;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.3;
     }
   </style>
 </head>
 <body>
-  <h1>Facebook Video Speed</h1>
-  <p>Default speed for videos on Facebook. Applies automatically as videos load.</p>
-  <div class="speeds" id="speeds"></div>
-  <div class="hint">Tip: you can also click the speed buttons that appear on top of each video.</div>
+  <div class="header">
+    <div class="title-group">
+      <h1>Speed Control</h1>
+      <span class="version-tag">v2.0</span>
+    </div>
+    <label class="switch" title="Toggle speed controller">
+      <input type="checkbox" id="masterToggle" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="speed-card">
+    <div class="speed-value-wrap">
+      <span class="speed-value" id="currentSpeedLabel">1.00x</span>
+    </div>
+    <input type="range" class="speed-slider" id="speedSlider" min="0.25" max="4.0" step="0.05" value="1">
+    <div class="slider-labels">
+      <span>0.25x</span>
+      <span>1x</span>
+      <span>2x</span>
+      <span>3x</span>
+      <span>4x</span>
+    </div>
+  </div>
+
+  <div class="section-label">Quick Presets</div>
+  <div class="presets-grid" id="presetsContainer"></div>
+
+  <div class="settings-list">
+    <div class="setting-item">
+      <span>Overlay Style</span>
+      <select class="setting-select" id="uiModeSelect">
+        <option value="compact">Compact Pill</option>
+        <option value="expanded">Full Bar</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <span>Auto-hide when idle</span>
+      <label class="mini-switch" title="Fade out controls after 2s of inactivity">
+        <input type="checkbox" id="autoHideToggle" checked>
+        <span class="mini-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <span>Overlay Position</span>
+      <select class="setting-select" id="positionSelect">
+        <option value="top-right">Top Right</option>
+        <option value="top-left">Top Left</option>
+        <option value="bottom-right">Bottom Right</option>
+        <option value="bottom-left">Bottom Left</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="hint">Adjustments instantly sync to all open Facebook tabs.</div>
+
   <script src="popup.js"></script>
 </body>
 </html>
