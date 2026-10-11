@@ -1,10 +1,18 @@
-﻿# Facebook Video Speed Controller v3.0
+﻿# Facebook Video Speed Controller v3.0.1
 
 A modern, high-performance Chrome extension that turns Facebook video playback into a power suite: speed controls (0.25x – 4.0x), audio booster up to 300%, floating Picture-in-Picture, high-resolution frame screenshot capture, quick seek jumps, and smart format profiles for Feed, Watch, Reels, and Fullscreen.
 
 ---
 
-## What's New in v3.0
+## What's New in v3.0.1
+
+- 🎨 **Brand New App Icon**: Beautiful high-resolution metallic icon with glowing speed bolt and sound wave arcs (16px, 48px, 128px).
+- 🐛 **Reliable Speed Selection Fix**: Fixed an issue where clicking between speed presets (e.g., 1.25x and 1.5x) would temporarily bounce back to 1.0x due to Reel profile overrides and unnecessary DOM button recreation. Individual video speed choices now take immediate and permanent precedence.
+- ⚡ **Zero-Flicker Preset Updates**: Preset buttons now update active states without DOM destruction, ensuring smooth clicks and uninterrupted interactions.
+
+---
+
+## Core Features (v3.0.0+)
 
 - 🔊 **Audio Volume Booster (Up to 300%)**: Amplify low-volume speech and quiet phone recordings using Web Audio API (`GainNode`). Cycle or slide through 100%, 150%, 200%, and 300%.
 - 📺 **Native Picture-in-Picture (PiP)**: Pop out any Facebook video with a single click on the overlay to keep watching while multitasking across browser tabs.
@@ -23,7 +31,7 @@ A modern, high-performance Chrome extension that turns Facebook video playback i
 
 1. Open Google Chrome and navigate to `chrome://extensions`.
 2. Toggle on **Developer mode** in the top right corner.
-3. Click **Load unpacked**.
+3. Click **Load unpacked** (or click the **Reload** button if already installed).
 4. Select this repository folder:
    `C:\Users\aajli\OneDrive\Desktop\some project with AI\Fb-video-speed`
 5. Visit [facebook.com](https://www.facebook.com) to enjoy the power suite!

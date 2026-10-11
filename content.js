@@ -98,7 +98,10 @@
     return false;
   }
 
-  function getTargetSpeedForVideo(video) {
+  function getTargetSpeedForVideo(video, entry) {
+    if (entry && typeof entry.userChosenSpeed === "number") {
+      return entry.userChosenSpeed;
+    }
     if (isLiveVideo(video)) return 1.0;
     if (settings.keepReelsNormal && isReelVideo(video)) return 1.0;
     return settings.preferredSpeed;
@@ -231,6 +234,7 @@
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
+        entry.userChosenSpeed = speed;
         applySpeed(video, entry, speed);
         saveSettings({ preferredSpeed: speed });
       });
@@ -302,6 +306,7 @@
       e.preventDefault();
       e.stopPropagation();
       const next = Math.max(0.25, parseFloat((entry.currentSpeed - 0.1).toFixed(2)));
+      entry.userChosenSpeed = next;
       applySpeed(video, entry, next);
       saveSettings({ preferredSpeed: next });
     });
@@ -323,6 +328,7 @@
       e.preventDefault();
       e.stopPropagation();
       const next = Math.min(4.0, parseFloat((entry.currentSpeed + 0.1).toFixed(2)));
+      entry.userChosenSpeed = next;
       applySpeed(video, entry, next);
       saveSettings({ preferredSpeed: next });
     });
@@ -433,6 +439,7 @@
       audioBtn,
       audioLabel: audioBtn.querySelector(".fb-audio-label"),
       currentSpeed: targetSpeed,
+      userChosenSpeed: undefined,
       inView: false,
       isHovered: false,
       hideTimeout: null,
@@ -550,10 +557,10 @@
     intersectionObserver.observe(video);
     if (resizeObserver) resizeObserver.observe(video);
 
-    const targetSpeed = getTargetSpeedForVideo(video);
+    const targetSpeed = getTargetSpeedForVideo(video, entry);
 
     video.addEventListener("play", () => {
-      if (settings.enabled && !entry.applyingSpeed && video.playbackRate !== entry.currentSpeed) {
+      if (settings.enabled && !entry.applyingSpeed && Math.abs(video.playbackRate - entry.currentSpeed) > 0.01) {
         video.playbackRate = entry.currentSpeed;
       }
       if (settings.audioBoost > 100) {
@@ -565,8 +572,7 @@
       if (
         settings.enabled &&
         !entry.applyingSpeed &&
-        video.playbackRate !== entry.currentSpeed &&
-        !video.paused
+        Math.abs(video.playbackRate - entry.currentSpeed) > 0.01
       ) {
         video.playbackRate = entry.currentSpeed;
       }
@@ -574,7 +580,7 @@
 
     video.addEventListener("loadedmetadata", () => {
       if (settings.enabled) {
-        const currentTarget = getTargetSpeedForVideo(video);
+        const currentTarget = getTargetSpeedForVideo(video, entry);
         applySpeed(video, entry, currentTarget);
       }
     });
@@ -594,8 +600,11 @@
     root.querySelectorAll("video").forEach((video) => trackVideo(video));
   }
 
+  let lastPresetsJson = "";
   function updateAllSettings(newSettings) {
     settings = { ...settings, ...newSettings };
+    const presetsChanged = JSON.stringify(settings.presets) !== lastPresetsJson;
+    lastPresetsJson = JSON.stringify(settings.presets);
 
     tracked.forEach((entry, video) => {
       entry.panel.className = `fb-speed-panel fb-pos-${settings.position} ${
@@ -626,10 +635,16 @@
         }
       }
 
-      renderPresetButtons(video, entry);
+      if (presetsChanged) {
+        renderPresetButtons(video, entry);
+      } else {
+        entry.presetButtons.forEach((btn, s) => {
+          btn.classList.toggle("fb-speed-active", Math.abs(s - entry.currentSpeed) < 0.01);
+        });
+      }
 
       if (settings.enabled) {
-        const target = getTargetSpeedForVideo(video);
+        const target = getTargetSpeedForVideo(video, entry);
         applySpeed(video, entry, target);
         applyAudioBoost(video, settings.audioBoost);
       }
