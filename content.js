@@ -8,13 +8,21 @@
     presets: [0.75, 1, 1.25, 1.5, 1.75, 2],
     uiMode: "compact", // "compact" or "expanded"
     autoHide: true,
-    position: "top-right" // "top-right", "top-left", "bottom-right", "bottom-left"
+    position: "top-right", // "top-right", "top-left", "bottom-right", "bottom-left"
+    audioBoost: 100, // 100 to 300 (%)
+    keepReelsNormal: true,
+    showSeekButtons: true,
+    showPipButton: true,
+    showScreenshotButton: true
   };
 
   let settings = { ...DEFAULT_SETTINGS };
 
   // videoEl -> entry object
   const tracked = new Map();
+
+  // WeakMap for Web Audio nodes per video element: video -> { ctx, gainNode, isHooked }
+  const audioNodes = new WeakMap();
 
   function getStorageArea() {
     try {
@@ -66,6 +74,36 @@
     return s === 1 ? "1x" : `${parseFloat(s.toFixed(2))}x`;
   }
 
+  function isReelVideo(video) {
+    if (window.location.pathname.includes("/reel/") || window.location.pathname.includes("/reels/")) {
+      return true;
+    }
+    const reelAncestor = video.closest('[role="article"]') || video.closest('[aria-label*="Reel" i]');
+    if (
+      reelAncestor &&
+      (reelAncestor.getAttribute("aria-label")?.toLowerCase().includes("reel") ||
+        reelAncestor.querySelector('[href*="/reel/"]'))
+    ) {
+      return true;
+    }
+    if (video.videoWidth > 0 && video.videoHeight > 0 && video.videoHeight / video.videoWidth > 1.25) {
+      return true;
+    }
+    return false;
+  }
+
+  function isLiveVideo(video) {
+    if (video.duration === Infinity || isNaN(video.duration)) return true;
+    if (video.closest('[aria-label*="Live" i]') || video.closest('[data-video-type="live"]')) return true;
+    return false;
+  }
+
+  function getTargetSpeedForVideo(video) {
+    if (isLiveVideo(video)) return 1.0;
+    if (settings.keepReelsNormal && isReelVideo(video)) return 1.0;
+    return settings.preferredSpeed;
+  }
+
   function applySpeed(video, entry, speed) {
     const clamped = Math.max(0.25, Math.min(4.0, parseFloat(Number(speed).toFixed(2))));
     entry.applyingSpeed = true;
@@ -78,15 +116,104 @@
 
     entry.currentSpeed = clamped;
 
-    // Update pill label
     if (entry.pillText) {
       entry.pillText.textContent = formatLabel(clamped);
     }
 
-    // Update preset buttons active state
     entry.presetButtons.forEach((btn, s) => {
       btn.classList.toggle("fb-speed-active", Math.abs(s - clamped) < 0.01);
     });
+  }
+
+  function applyAudioBoost(video, boostPercent) {
+    const boost = Math.max(100, Math.min(300, boostPercent || 100));
+    const gainValue = boost / 100;
+
+    let data = audioNodes.get(video);
+    if (!data) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const source = ctx.createMediaElementSource(video);
+        const gainNode = ctx.createGain();
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        data = { ctx, gainNode };
+        audioNodes.set(video, data);
+
+        const resumeAudio = () => {
+          if (ctx.state === "suspended") ctx.resume();
+        };
+        video.addEventListener("play", resumeAudio);
+        window.addEventListener("click", resumeAudio, { once: true });
+      } catch (e) {
+        return;
+      }
+    }
+
+    if (data && data.gainNode) {
+      try {
+        data.gainNode.gain.value = gainValue;
+        if (data.ctx.state === "suspended") data.ctx.resume();
+      } catch (e) {}
+    }
+  }
+
+  async function togglePiP(video) {
+    try {
+      if (document.pictureInPictureElement === video) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      }
+    } catch (e) {
+      console.warn("PiP not available:", e);
+    }
+  }
+
+  function captureScreenshot(video, panel) {
+    try {
+      const width = video.videoWidth || video.clientWidth || 1280;
+      const height = video.videoHeight || video.clientHeight || 720;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, width, height);
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          showToast(panel, "⚠️ Capture error");
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `fb-frame-${Date.now()}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(panel, "📸 Snapshot saved!");
+      }, "image/png");
+    } catch (e) {
+      showToast(panel, "⚠️ Protected stream");
+    }
+  }
+
+  function seekVideo(video, seconds) {
+    try {
+      const current = video.currentTime || 0;
+      const duration = video.duration || Infinity;
+      video.currentTime = Math.max(0, Math.min(duration, current + seconds));
+    } catch (e) {}
+  }
+
+  function showToast(panel, msg) {
+    const toast = document.createElement("div");
+    toast.className = "fb-speed-toast";
+    toast.textContent = msg;
+    panel.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
   }
 
   function renderPresetButtons(video, entry) {
@@ -141,13 +268,15 @@
     }`;
     overlay.appendChild(panel);
 
+    const targetSpeed = getTargetSpeedForVideo(video);
+
     // Pill badge for compact mode
     const pillBadge = document.createElement("div");
     pillBadge.className = "fb-speed-pill-badge";
-    pillBadge.title = "Click to toggle speed controls";
+    pillBadge.title = "Click to toggle video controls";
     pillBadge.innerHTML = `
       <svg viewBox="0 0 24 24"><path d="M13 2L3 14h8l-2 8 10-12h-8l2-8z"/></svg>
-      <span class="fb-speed-pill-text">${formatLabel(settings.preferredSpeed)}</span>
+      <span class="fb-speed-pill-text">${formatLabel(targetSpeed)}</span>
     `;
     panel.appendChild(pillBadge);
     const pillText = pillBadge.querySelector(".fb-speed-pill-text");
@@ -158,7 +287,7 @@
       panel.classList.toggle("fb-expanded");
     });
 
-    // Tray containing all speed controls
+    // Tray containing all speed controls & tools
     const controlsTray = document.createElement("div");
     controlsTray.className = "fb-speed-controls-tray";
     panel.appendChild(controlsTray);
@@ -178,21 +307,11 @@
     });
     controlsTray.appendChild(minusBtn);
 
-    // Divider
-    const div1 = document.createElement("div");
-    div1.className = "fb-speed-divider";
-    controlsTray.appendChild(div1);
-
     // Presets container
     const presetsContainer = document.createElement("div");
     presetsContainer.style.display = "flex";
     presetsContainer.style.gap = "3px";
     controlsTray.appendChild(presetsContainer);
-
-    // Divider
-    const div2 = document.createElement("div");
-    div2.className = "fb-speed-divider";
-    controlsTray.appendChild(div2);
 
     // Increment button (+0.1x)
     const plusBtn = document.createElement("button");
@@ -209,6 +328,95 @@
     });
     controlsTray.appendChild(plusBtn);
 
+    // Seek buttons (-5s, +5s)
+    const seekTray = document.createElement("div");
+    seekTray.style.display = settings.showSeekButtons ? "flex" : "none";
+    seekTray.style.alignItems = "center";
+    seekTray.style.gap = "3px";
+
+    const divSeek = document.createElement("div");
+    divSeek.className = "fb-speed-divider";
+    seekTray.appendChild(divSeek);
+
+    const rewindBtn = document.createElement("button");
+    rewindBtn.className = "fb-util-btn";
+    rewindBtn.title = "Rewind 5 seconds";
+    rewindBtn.textContent = "−5s";
+    rewindBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      seekVideo(video, -5);
+    });
+    seekTray.appendChild(rewindBtn);
+
+    const fwdBtn = document.createElement("button");
+    fwdBtn.className = "fb-util-btn";
+    fwdBtn.title = "Skip forward 5 seconds";
+    fwdBtn.textContent = "+5s";
+    fwdBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      seekVideo(video, 5);
+    });
+    seekTray.appendChild(fwdBtn);
+
+    controlsTray.appendChild(seekTray);
+
+    // Pro tools tray (PiP, Screenshot, Audio)
+    const toolsTray = document.createElement("div");
+    toolsTray.style.display = "flex";
+    toolsTray.style.alignItems = "center";
+    toolsTray.style.gap = "3px";
+
+    const divTools = document.createElement("div");
+    divTools.className = "fb-speed-divider";
+    toolsTray.appendChild(divTools);
+
+    // PiP Button
+    const pipBtn = document.createElement("button");
+    pipBtn.className = "fb-util-btn";
+    pipBtn.title = "Picture-in-Picture floating player";
+    pipBtn.style.display = settings.showPipButton ? "inline-flex" : "none";
+    pipBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>`;
+    pipBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePiP(video);
+    });
+    toolsTray.appendChild(pipBtn);
+
+    // Screenshot Button
+    const shotBtn = document.createElement("button");
+    shotBtn.className = "fb-util-btn";
+    shotBtn.title = "Save high-resolution video frame screenshot";
+    shotBtn.style.display = settings.showScreenshotButton ? "inline-flex" : "none";
+    shotBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm7-10h-3.17L14 3H10L8.17 5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H5V7h3.88l1.83-2h4.58l1.83 2H19v12z"/></svg>`;
+    shotBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      captureScreenshot(video, panel);
+    });
+    toolsTray.appendChild(shotBtn);
+
+    // Audio Boost Toggle / Cycle Button
+    const audioBtn = document.createElement("button");
+    audioBtn.className = `fb-util-btn ${settings.audioBoost > 100 ? "fb-audio-active" : ""}`;
+    audioBtn.title = "Audio Volume Boost (Click to cycle 100% -> 150% -> 200% -> 300%)";
+    audioBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg><span class="fb-audio-label">${settings.audioBoost > 100 ? settings.audioBoost + "%" : ""}</span>`;
+    audioBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const levels = [100, 150, 200, 300];
+      const curIdx = levels.indexOf(settings.audioBoost);
+      const nextLevel = levels[(curIdx + 1) % levels.length];
+      saveSettings({ audioBoost: nextLevel });
+      applyAudioBoost(video, nextLevel);
+      showToast(panel, `🔊 Audio Boost: ${nextLevel}%`);
+    });
+    toolsTray.appendChild(audioBtn);
+
+    controlsTray.appendChild(toolsTray);
+
     document.body.appendChild(overlay);
 
     const entry = {
@@ -219,7 +427,12 @@
       controlsTray,
       presetsContainer,
       presetButtons: new Map(),
-      currentSpeed: settings.preferredSpeed,
+      seekTray,
+      pipBtn,
+      shotBtn,
+      audioBtn,
+      audioLabel: audioBtn.querySelector(".fb-audio-label"),
+      currentSpeed: targetSpeed,
       inView: false,
       isHovered: false,
       hideTimeout: null,
@@ -228,7 +441,6 @@
 
     renderPresetButtons(video, entry);
 
-    // Hover listeners on overlay and video for auto-hide
     overlay.addEventListener("mouseenter", () => {
       entry.isHovered = true;
       triggerAutoHide(entry);
@@ -291,7 +503,6 @@
     });
   }
 
-  // Observers for high performance
   const intersectionObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((change) => {
@@ -339,10 +550,14 @@
     intersectionObserver.observe(video);
     if (resizeObserver) resizeObserver.observe(video);
 
-    // Re-assert our chosen speed if Facebook resets playbackRate
+    const targetSpeed = getTargetSpeedForVideo(video);
+
     video.addEventListener("play", () => {
       if (settings.enabled && !entry.applyingSpeed && video.playbackRate !== entry.currentSpeed) {
         video.playbackRate = entry.currentSpeed;
+      }
+      if (settings.audioBoost > 100) {
+        applyAudioBoost(video, settings.audioBoost);
       }
     });
 
@@ -359,12 +574,16 @@
 
     video.addEventListener("loadedmetadata", () => {
       if (settings.enabled) {
-        applySpeed(video, entry, entry.currentSpeed);
+        const currentTarget = getTargetSpeedForVideo(video);
+        applySpeed(video, entry, currentTarget);
       }
     });
 
     if (settings.enabled) {
-      applySpeed(video, entry, settings.preferredSpeed);
+      applySpeed(video, entry, targetSpeed);
+      if (settings.audioBoost > 100) {
+        applyAudioBoost(video, settings.audioBoost);
+      }
     }
 
     positionOverlay(video, entry);
@@ -379,12 +598,10 @@
     settings = { ...settings, ...newSettings };
 
     tracked.forEach((entry, video) => {
-      // Update UI classes
       entry.panel.className = `fb-speed-panel fb-pos-${settings.position} ${
         settings.uiMode === "compact" ? "fb-speed-compact" : ""
       }`;
 
-      // Auto-hide
       if (settings.autoHide) {
         entry.overlay.classList.add("fb-speed-autohide");
         entry.overlay.classList.remove("fb-speed-visible");
@@ -393,12 +610,28 @@
         entry.overlay.classList.add("fb-speed-visible");
       }
 
-      // Re-render presets
+      if (entry.seekTray) {
+        entry.seekTray.style.display = settings.showSeekButtons ? "flex" : "none";
+      }
+      if (entry.pipBtn) {
+        entry.pipBtn.style.display = settings.showPipButton ? "inline-flex" : "none";
+      }
+      if (entry.shotBtn) {
+        entry.shotBtn.style.display = settings.showScreenshotButton ? "inline-flex" : "none";
+      }
+      if (entry.audioBtn) {
+        entry.audioBtn.classList.toggle("fb-audio-active", settings.audioBoost > 100);
+        if (entry.audioLabel) {
+          entry.audioLabel.textContent = settings.audioBoost > 100 ? `${settings.audioBoost}%` : "";
+        }
+      }
+
       renderPresetButtons(video, entry);
 
-      // Apply speed if enabled
       if (settings.enabled) {
-        applySpeed(video, entry, settings.preferredSpeed);
+        const target = getTargetSpeedForVideo(video);
+        applySpeed(video, entry, target);
+        applyAudioBoost(video, settings.audioBoost);
       }
       positionOverlay(video, entry);
     });
@@ -422,7 +655,7 @@
     });
   } catch (e) {}
 
-  // Watch for videos added dynamically (feed scroll, reels, watch page, etc.)
+  // Watch for videos added dynamically
   const mutationObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       mutation.addedNodes.forEach((node) => {
@@ -441,11 +674,9 @@
     subtree: true
   });
 
-  // Passive scroll and resize listeners
   window.addEventListener("scroll", scheduleReposition, { passive: true });
   window.addEventListener("resize", scheduleReposition, { passive: true });
 
-  // Low-frequency safety sweep (every 2.5s instead of aggressive 150ms)
   setInterval(() => {
     scanForVideos();
   }, 2500);

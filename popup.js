@@ -1,23 +1,38 @@
 const SETTINGS_KEY = "fbSpeedSettings";
 const LEGACY_STORAGE_KEY = "fbPreferredSpeed";
 
-const POPUP_PRESETS = [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
-
 const DEFAULT_SETTINGS = {
   enabled: true,
   preferredSpeed: 1,
   presets: [0.75, 1, 1.25, 1.5, 1.75, 2],
   uiMode: "compact",
   autoHide: true,
-  position: "top-right"
+  position: "top-right",
+  audioBoost: 100,
+  keepReelsNormal: true,
+  showSeekButtons: true,
+  showPipButton: true,
+  showScreenshotButton: true
 };
 
 let currentSettings = { ...DEFAULT_SETTINGS };
 
+// DOM Elements
 const masterToggle = document.getElementById("masterToggle");
 const currentSpeedLabel = document.getElementById("currentSpeedLabel");
 const speedSlider = document.getElementById("speedSlider");
 const presetsContainer = document.getElementById("presetsContainer");
+const presetsInput = document.getElementById("presetsInput");
+const savePresetsBtn = document.getElementById("savePresetsBtn");
+
+const audioBoostSlider = document.getElementById("audioBoostSlider");
+const audioBoostLabel = document.getElementById("audioBoostLabel");
+
+const keepReelsToggle = document.getElementById("keepReelsToggle");
+const seekButtonsToggle = document.getElementById("seekButtonsToggle");
+const pipButtonToggle = document.getElementById("pipButtonToggle");
+const screenshotButtonToggle = document.getElementById("screenshotButtonToggle");
+
 const uiModeSelect = document.getElementById("uiModeSelect");
 const autoHideToggle = document.getElementById("autoHideToggle");
 const positionSelect = document.getElementById("positionSelect");
@@ -74,16 +89,35 @@ function renderUI() {
   masterToggle.checked = Boolean(currentSettings.enabled);
   currentSpeedLabel.textContent = formatLabel(currentSettings.preferredSpeed);
   speedSlider.value = currentSettings.preferredSpeed;
+
+  // Audio Boost
+  audioBoostSlider.value = currentSettings.audioBoost || 100;
+  audioBoostLabel.textContent =
+    currentSettings.audioBoost > 100 ? `${currentSettings.audioBoost}%` : "100% (Normal)";
+
+  // Toggles
+  keepReelsToggle.checked = Boolean(currentSettings.keepReelsNormal);
+  seekButtonsToggle.checked = Boolean(currentSettings.showSeekButtons);
+  pipButtonToggle.checked = Boolean(currentSettings.showPipButton);
+  screenshotButtonToggle.checked = Boolean(currentSettings.showScreenshotButton);
+
+  // Display Settings
   uiModeSelect.value = currentSettings.uiMode || "compact";
   autoHideToggle.checked = Boolean(currentSettings.autoHide);
   positionSelect.value = currentSettings.position || "top-right";
 
+  // Presets
+  presetsInput.value = (currentSettings.presets || DEFAULT_SETTINGS.presets).join(", ");
   renderPresets();
 }
 
 function renderPresets() {
   presetsContainer.innerHTML = "";
-  POPUP_PRESETS.forEach((speed) => {
+  const list = currentSettings.presets && currentSettings.presets.length > 0
+    ? currentSettings.presets
+    : DEFAULT_SETTINGS.presets;
+
+  list.forEach((speed) => {
     const btn = document.createElement("button");
     btn.className = "preset-btn";
     btn.textContent = speed === 1 ? "1x" : `${speed}x`;
@@ -106,11 +140,7 @@ function updateSpeed(speed) {
   saveSettings({ preferredSpeed: clamped });
 }
 
-// Event Listeners
-masterToggle.addEventListener("change", () => {
-  saveSettings({ enabled: masterToggle.checked });
-});
-
+// Speed Slider listeners
 speedSlider.addEventListener("input", () => {
   const speed = parseFloat(speedSlider.value);
   currentSpeedLabel.textContent = formatLabel(speed);
@@ -123,6 +153,57 @@ speedSlider.addEventListener("change", () => {
   updateSpeed(speed);
 });
 
+// Master toggle
+masterToggle.addEventListener("change", () => {
+  saveSettings({ enabled: masterToggle.checked });
+});
+
+// Audio Boost Slider
+audioBoostSlider.addEventListener("input", () => {
+  const val = parseInt(audioBoostSlider.value, 10);
+  audioBoostLabel.textContent = val > 100 ? `${val}%` : "100% (Normal)";
+});
+
+audioBoostSlider.addEventListener("change", () => {
+  const val = parseInt(audioBoostSlider.value, 10);
+  saveSettings({ audioBoost: val });
+});
+
+// Smart Profiles & Tools Toggles
+keepReelsToggle.addEventListener("change", () => {
+  saveSettings({ keepReelsNormal: keepReelsToggle.checked });
+});
+
+seekButtonsToggle.addEventListener("change", () => {
+  saveSettings({ showSeekButtons: seekButtonsToggle.checked });
+});
+
+pipButtonToggle.addEventListener("change", () => {
+  saveSettings({ showPipButton: pipButtonToggle.checked });
+});
+
+screenshotButtonToggle.addEventListener("change", () => {
+  saveSettings({ showScreenshotButton: screenshotButtonToggle.checked });
+});
+
+// Presets Customizer
+savePresetsBtn.addEventListener("click", () => {
+  const raw = presetsInput.value;
+  const parsed = raw
+    .split(",")
+    .map((s) => parseFloat(s.trim()))
+    .filter((n) => !isNaN(n) && n >= 0.25 && n <= 4.0);
+
+  const uniqueSorted = [...new Set(parsed)].sort((a, b) => a - b);
+  if (uniqueSorted.length > 0) {
+    currentSettings.presets = uniqueSorted;
+    saveSettings({ presets: uniqueSorted });
+    renderPresets();
+    presetsInput.value = uniqueSorted.join(", ");
+  }
+});
+
+// Display preferences
 uiModeSelect.addEventListener("change", () => {
   saveSettings({ uiMode: uiModeSelect.value });
 });
@@ -140,4 +221,5 @@ loadSettings((loaded) => {
   currentSettings = loaded;
   renderUI();
 });
+
 

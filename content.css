@@ -151,3 +151,72 @@
 .fb-speed-panel.fb-speed-compact.fb-expanded .fb-speed-pill-badge {
   display: none;
 }
+
+/* Utility Tool Buttons (PiP, Screenshot, Seek, Volume) */
+.fb-util-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e4e6eb;
+  border: none;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 24px;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.fb-util-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.fb-util-btn:active {
+  transform: scale(0.92);
+}
+
+.fb-util-btn svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.fb-util-btn.fb-audio-active {
+  background: rgba(24, 119, 242, 0.25);
+  color: #4599ff;
+  border: 1px solid rgba(24, 119, 242, 0.4);
+}
+
+/* Mini Toast Notification */
+.fb-speed-toast {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: rgba(18, 20, 24, 0.92);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: fbFadeInOut 2.5s forwards;
+}
+
+@keyframes fbFadeInOut {
+  0% { opacity: 0; transform: translateY(-6px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
