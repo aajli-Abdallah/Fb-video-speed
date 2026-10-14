@@ -1,14 +1,13 @@
-﻿# Facebook Video Speed Controller v3.0.1
+﻿# Facebook Video Speed Controller v3.0.2
 
 A modern, high-performance Chrome extension that turns Facebook video playback into a power suite: speed controls (0.25x – 4.0x), audio booster up to 300%, floating Picture-in-Picture, high-resolution frame screenshot capture, quick seek jumps, and smart format profiles for Feed, Watch, Reels, and Fullscreen.
 
 ---
 
-## What's New in v3.0.1
+## What's New in v3.0.2
 
-- 🎨 **Brand New App Icon**: Beautiful high-resolution metallic icon with glowing speed bolt and sound wave arcs (16px, 48px, 128px).
-- 🐛 **Reliable Speed Selection Fix**: Fixed an issue where clicking between speed presets (e.g., 1.25x and 1.5x) would temporarily bounce back to 1.0x due to Reel profile overrides and unnecessary DOM button recreation. Individual video speed choices now take immediate and permanent precedence.
-- ⚡ **Zero-Flicker Preset Updates**: Preset buttons now update active states without DOM destruction, ensuring smooth clicks and uninterrupted interactions.
+- 🐛 **Unified Player Speed**: Feed, expanded, Watch, and Reel video elements now read the same saved speed instead of retaining temporary per-player values.
+- ⚡ **Immediate Global Updates**: Changing speed from any on-video control instantly updates all currently tracked Facebook players and persists for newly rendered ones.
 
 ---
 
@@ -18,7 +17,7 @@ A modern, high-performance Chrome extension that turns Facebook video playback i
 - 📺 **Native Picture-in-Picture (PiP)**: Pop out any Facebook video with a single click on the overlay to keep watching while multitasking across browser tabs.
 - 📷 **High-Resolution Frame Screenshot**: Dedicated camera button captures and saves the exact video frame at native video resolution as a PNG.
 - ⏩ **Quick Seek Jumpers (±5s)**: Effortlessly skip forward or rewind 5 seconds without fiddling with Facebook's tiny progress bar.
-- 🎯 **Smart Format Profiles**: Automatically keeps Reels at normal `1.0x` speed while speeding up standard Feed/Watch videos, with live broadcast freeze protection.
+- 🎯 **Centralized Playback Speed**: One selected speed is applied consistently to Feed, Watch, expanded videos, and Reels.
 - 🎛️ **Custom Presets Editor**: Customize and save your own list of preset speeds directly from the popup dashboard.
 - ⚡ **Expanded Speed Range & Stepping**: Control playback from **0.25x to 4.0x** with granular `−0.1x` / `+0.1x` stepper buttons.
 - 💊 **Compact Pill UI Mode**: Clean floating pill (`⚡ 1.5x`) that expands into full controls on hover or click, preserving full screen real estate.
@@ -55,7 +54,7 @@ A modern, high-performance Chrome extension that turns Facebook video playback i
 - **Speed Slider & Display**: Smooth slider from `0.25x` to `4.0x` with 0.05x granularity.
 - **Custom Presets Manager**: Edit and save custom speed presets (e.g. `0.75, 1, 1.25, 1.5, 2, 2.5`).
 - **Audio Boost Slider**: Amplify volume between 100% and 300%.
-- **Smart Profiles**: Toggle "Keep Reels at 1.0x (Normal)".
+- **Centralized Speed**: Choose a speed once; it follows you between Feed, Watch, expanded videos, and Reels.
 - **Tool Visibility**: Toggle Seek buttons, PiP button, and Screenshot button on/off.
 - **Overlay Style & Position**: Choose between Compact Pill or Full Bar, toggle auto-hide, and dock to Top-Right, Top-Left, Bottom-Right, or Bottom-Left.
 

@@ -9,7 +9,6 @@ const DEFAULT_SETTINGS = {
   autoHide: true,
   position: "top-right",
   audioBoost: 100,
-  keepReelsNormal: true,
   showSeekButtons: true,
   showPipButton: true,
   showScreenshotButton: true
@@ -28,7 +27,6 @@ const savePresetsBtn = document.getElementById("savePresetsBtn");
 const audioBoostSlider = document.getElementById("audioBoostSlider");
 const audioBoostLabel = document.getElementById("audioBoostLabel");
 
-const keepReelsToggle = document.getElementById("keepReelsToggle");
 const seekButtonsToggle = document.getElementById("seekButtonsToggle");
 const pipButtonToggle = document.getElementById("pipButtonToggle");
 const screenshotButtonToggle = document.getElementById("screenshotButtonToggle");
@@ -96,7 +94,6 @@ function renderUI() {
     currentSettings.audioBoost > 100 ? `${currentSettings.audioBoost}%` : "100% (Normal)";
 
   // Toggles
-  keepReelsToggle.checked = Boolean(currentSettings.keepReelsNormal);
   seekButtonsToggle.checked = Boolean(currentSettings.showSeekButtons);
   pipButtonToggle.checked = Boolean(currentSettings.showPipButton);
   screenshotButtonToggle.checked = Boolean(currentSettings.showScreenshotButton);
@@ -169,11 +166,7 @@ audioBoostSlider.addEventListener("change", () => {
   saveSettings({ audioBoost: val });
 });
 
-// Smart Profiles & Tools Toggles
-keepReelsToggle.addEventListener("change", () => {
-  saveSettings({ keepReelsNormal: keepReelsToggle.checked });
-});
-
+// Tools Toggles
 seekButtonsToggle.addEventListener("change", () => {
   saveSettings({ showSeekButtons: seekButtonsToggle.checked });
 });

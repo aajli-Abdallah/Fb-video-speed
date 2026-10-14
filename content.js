@@ -10,7 +10,6 @@
     autoHide: true,
     position: "top-right", // "top-right", "top-left", "bottom-right", "bottom-left"
     audioBoost: 100, // 100 to 300 (%)
-    keepReelsNormal: true,
     showSeekButtons: true,
     showPipButton: true,
     showScreenshotButton: true
@@ -74,37 +73,21 @@
     return s === 1 ? "1x" : `${parseFloat(s.toFixed(2))}x`;
   }
 
-  function isReelVideo(video) {
-    if (window.location.pathname.includes("/reel/") || window.location.pathname.includes("/reels/")) {
-      return true;
-    }
-    const reelAncestor = video.closest('[role="article"]') || video.closest('[aria-label*="Reel" i]');
-    if (
-      reelAncestor &&
-      (reelAncestor.getAttribute("aria-label")?.toLowerCase().includes("reel") ||
-        reelAncestor.querySelector('[href*="/reel/"]'))
-    ) {
-      return true;
-    }
-    if (video.videoWidth > 0 && video.videoHeight > 0 && video.videoHeight / video.videoWidth > 1.25) {
-      return true;
-    }
-    return false;
-  }
-
-  function isLiveVideo(video) {
-    if (video.duration === Infinity || isNaN(video.duration)) return true;
-    if (video.closest('[aria-label*="Live" i]') || video.closest('[data-video-type="live"]')) return true;
-    return false;
-  }
-
-  function getTargetSpeedForVideo(video, entry) {
-    if (entry && typeof entry.userChosenSpeed === "number") {
-      return entry.userChosenSpeed;
-    }
-    if (isLiveVideo(video)) return 1.0;
-    if (settings.keepReelsNormal && isReelVideo(video)) return 1.0;
+  // Every Facebook player (feed, expanded view, watch, and reels) uses this
+  // one value. Facebook replaces video elements as a post/reel is opened, so
+  // keeping a speed on an individual element makes the UI drift out of sync.
+  function getTargetSpeedForVideo() {
     return settings.preferredSpeed;
+  }
+
+  function setPreferredSpeed(speed) {
+    const clamped = Math.max(0.25, Math.min(4.0, parseFloat(Number(speed).toFixed(2))));
+    saveSettings({ preferredSpeed: clamped });
+
+    // Apply immediately rather than waiting for the asynchronous storage event.
+    tracked.forEach((entry, video) => {
+      if (settings.enabled) applySpeed(video, entry, clamped);
+    });
   }
 
   function applySpeed(video, entry, speed) {
@@ -234,9 +217,7 @@
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        entry.userChosenSpeed = speed;
-        applySpeed(video, entry, speed);
-        saveSettings({ preferredSpeed: speed });
+        setPreferredSpeed(speed);
       });
       entry.presetsContainer.appendChild(btn);
       entry.presetButtons.set(speed, btn);
@@ -272,7 +253,7 @@
     }`;
     overlay.appendChild(panel);
 
-    const targetSpeed = getTargetSpeedForVideo(video);
+    const targetSpeed = getTargetSpeedForVideo();
 
     // Pill badge for compact mode
     const pillBadge = document.createElement("div");
@@ -306,9 +287,7 @@
       e.preventDefault();
       e.stopPropagation();
       const next = Math.max(0.25, parseFloat((entry.currentSpeed - 0.1).toFixed(2)));
-      entry.userChosenSpeed = next;
-      applySpeed(video, entry, next);
-      saveSettings({ preferredSpeed: next });
+      setPreferredSpeed(next);
     });
     controlsTray.appendChild(minusBtn);
 
@@ -328,9 +307,7 @@
       e.preventDefault();
       e.stopPropagation();
       const next = Math.min(4.0, parseFloat((entry.currentSpeed + 0.1).toFixed(2)));
-      entry.userChosenSpeed = next;
-      applySpeed(video, entry, next);
-      saveSettings({ preferredSpeed: next });
+      setPreferredSpeed(next);
     });
     controlsTray.appendChild(plusBtn);
 
@@ -439,7 +416,6 @@
       audioBtn,
       audioLabel: audioBtn.querySelector(".fb-audio-label"),
       currentSpeed: targetSpeed,
-      userChosenSpeed: undefined,
       inView: false,
       isHovered: false,
       hideTimeout: null,
@@ -557,7 +533,7 @@
     intersectionObserver.observe(video);
     if (resizeObserver) resizeObserver.observe(video);
 
-    const targetSpeed = getTargetSpeedForVideo(video, entry);
+    const targetSpeed = getTargetSpeedForVideo();
 
     video.addEventListener("play", () => {
       if (settings.enabled && !entry.applyingSpeed && Math.abs(video.playbackRate - entry.currentSpeed) > 0.01) {
@@ -580,7 +556,7 @@
 
     video.addEventListener("loadedmetadata", () => {
       if (settings.enabled) {
-        const currentTarget = getTargetSpeedForVideo(video, entry);
+        const currentTarget = getTargetSpeedForVideo();
         applySpeed(video, entry, currentTarget);
       }
     });
@@ -644,7 +620,7 @@
       }
 
       if (settings.enabled) {
-        const target = getTargetSpeedForVideo(video, entry);
+        const target = getTargetSpeedForVideo();
         applySpeed(video, entry, target);
         applyAudioBoost(video, settings.audioBoost);
       }
