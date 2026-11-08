@@ -141,13 +141,11 @@
   gap: 3px;
 }
 
-/* When compact panel is hovered or opened, show tray */
-.fb-speed-panel.fb-speed-compact:hover .fb-speed-controls-tray,
+/* When compact panel is expanded via hover or click, show tray */
 .fb-speed-panel.fb-speed-compact.fb-expanded .fb-speed-controls-tray {
   display: flex;
 }
 
-.fb-speed-panel.fb-speed-compact:hover .fb-speed-pill-badge,
 .fb-speed-panel.fb-speed-compact.fb-expanded .fb-speed-pill-badge {
   display: none;
 }

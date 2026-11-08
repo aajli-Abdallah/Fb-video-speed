@@ -1,12 +1,13 @@
-﻿# Facebook Video Speed Controller v3.0.2
+# Facebook Video Speed Controller v3.0.3
 
 A modern, high-performance Chrome extension that turns Facebook video playback into a power suite: speed controls (0.25x – 4.0x), audio booster up to 300%, floating Picture-in-Picture, high-resolution frame screenshot capture, quick seek jumps, and smart format profiles for Feed, Watch, Reels, and Fullscreen.
 
 ---
 
-## What's New in v3.0.2
+## What's New in v3.0.3
 
-- 🐛 **Unified Player Speed**: Feed, expanded, Watch, and Reel video elements now read the same saved speed instead of retaining temporary per-player values.
+- ⏱️ **Pill Expansion Grace Period**: When hovering over the compact pill to expand controls, the tray now stays open for a 1-second timespan after the cursor leaves before collapsing back to the pill.
+- 🐛 **Unified Player Speed**: Feed, expanded, Watch, and Reel video elements read the same saved speed instead of retaining temporary per-player values.
 - ⚡ **Immediate Global Updates**: Changing speed from any on-video control instantly updates all currently tracked Facebook players and persists for newly rendered ones.
 
 ---

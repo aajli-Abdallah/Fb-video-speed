@@ -269,7 +269,20 @@
     pillBadge.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
+      clearTimeout(entry.collapseTimeout);
       panel.classList.toggle("fb-expanded");
+    });
+
+    // Keep tray open for 1s after the cursor leaves the panel
+    panel.addEventListener("mouseenter", () => {
+      clearTimeout(entry.collapseTimeout);
+      panel.classList.add("fb-expanded");
+    });
+    panel.addEventListener("mouseleave", () => {
+      clearTimeout(entry.collapseTimeout);
+      entry.collapseTimeout = setTimeout(() => {
+        panel.classList.remove("fb-expanded");
+      }, 1000);
     });
 
     // Tray containing all speed controls & tools
@@ -419,6 +432,7 @@
       inView: false,
       isHovered: false,
       hideTimeout: null,
+      collapseTimeout: null,
       applyingSpeed: false
     };
 
@@ -518,6 +532,7 @@
       intersectionObserver.unobserve(video);
       if (resizeObserver) resizeObserver.unobserve(video);
       clearTimeout(entry.hideTimeout);
+      clearTimeout(entry.collapseTimeout);
       entry.overlay.remove();
     } catch (e) {}
     tracked.delete(video);
